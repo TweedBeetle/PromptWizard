@@ -1,0 +1,20 @@
+prompt_technique_name: "critique_n_refine"
+unique_model_id: gpt-4o-mini
+mutate_refine_iterations: 2
+mutation_rounds: 2
+refine_instruction: true
+refine_task_eg_iterations: 2
+style_variation: 3
+questions_batch_size: 1
+min_correct_count: 2
+max_eval_batches: 4
+top_n: 1
+task_description: "You are a test solver. You will be given a test problem to solve."
+base_instruction: "Solve step by step."
+answer_format: "Wrap your final answer between <ANS_START> and <ANS_END> tags."
+seen_set_size: 10
+few_shot_count: 3
+num_train_examples: 5
+generate_reasoning: true
+generate_expert_identity: false
+generate_intent_keywords: false
