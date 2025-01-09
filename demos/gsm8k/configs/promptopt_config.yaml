@@ -7,7 +7,7 @@
 ############################ Critique Task Description Start ############################
 prompt_technique_name: "critique_n_refine"
 # unique_model_id of model defined in llm_config.yaml
-unique_model_id: gpt-4
+unique_model_id: gpt-4o-mini
 # Number of iterations for conducting <mutation_rounds>  rounds of mutation of task description
 # followed by refinement of instructions
 mutate_refine_iterations: 3
