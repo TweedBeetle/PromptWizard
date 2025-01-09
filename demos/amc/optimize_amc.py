@@ -55,8 +55,8 @@ def main():
         os.makedirs("data")
         
     # Load AMC validation dataset
-    with open("../../aimo_opt/data/aimo-validation-amc/data/train-00000-of-00001.json") as f:
-        dataset = [json.loads(line) for line in f]
+    import pandas as pd
+    dataset = pd.read_parquet("../../aimo_opt/data/aimo-validation-amc/data/train-00000-of-00001.parquet").to_dict('records')
     
     # Initialize processor
     amc_processor = AMCProcessor()
