@@ -54,9 +54,13 @@ def main():
     if not os.path.exists("data"):
         os.makedirs("data")
         
-    # Load AMC validation dataset
+    # Load AMC validation dataset and filter for 2024
     import pandas as pd
-    dataset = pd.read_parquet("../../aimo_opt/data/aimo-validation-amc/data/train-00000-of-00001.parquet").to_dict('records')
+    dataset = pd.read_parquet("../../aimo_opt/data/aimo-validation-amc/data/train-00000-of-00001.parquet")
+    
+    # Filter for 2024 problems by checking URL
+    dataset = dataset[dataset['url'].str.contains('2024', na=False)]
+    dataset = dataset.to_dict('records')
     
     # Initialize processor
     amc_processor = AMCProcessor()
