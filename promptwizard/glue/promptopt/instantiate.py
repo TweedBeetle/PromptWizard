@@ -1,7 +1,7 @@
 from os.path import dirname, join
 import pickle
 import time
-from typing import Any
+from typing import Any, List
 
 from ..common.base_classes import LLMConfig, SetupConfig
 from ..common.constants.log_strings import CommonLogsStr
@@ -120,7 +120,7 @@ class GluePromptOpt:
             )
 
     def get_best_prompt(
-            self, use_examples=False, run_without_train_examples=False, generate_synthetic_examples=False, top_n=1
+            self, use_examples=False, run_without_train_examples=False, generate_synthetic_examples=False
             ) -> (List[str], Any):
         """
         Call get_best_prompt() method of class PromptOptimizer & return its value.
@@ -133,7 +133,7 @@ class GluePromptOpt:
         start_time = time.time()
         self.BEST_PROMPTS, self.EXPERT_PROFILE = self.prompt_opt.get_best_prompt(
             self.prompt_opt_param, use_examples=use_examples, run_without_train_examples=run_without_train_examples,
-            generate_synthetic_examples=generate_synthetic_examples, top_n=top_n
+            generate_synthetic_examples=generate_synthetic_examples
             )
         self.BEST_PROMPT = self.BEST_PROMPTS[0] if self.BEST_PROMPTS else None
 
