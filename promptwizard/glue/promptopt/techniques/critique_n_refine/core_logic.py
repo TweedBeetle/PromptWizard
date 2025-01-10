@@ -63,7 +63,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
     def __init__(
             self, dataset: List, base_path: str, setup_config: SetupConfig,
             prompt_pool: CritiqueNRefinePromptPool, data_processor: DatasetSpecificProcessing, logger
-            ):
+    ):
         self.dataset = dataset
         self.setup_config = setup_config
         self.data_processor = data_processor
@@ -95,7 +95,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
     def gen_different_styles(
             self, base_instruction: str, task_description: str,
             mutation_rounds: int = 2, thinking_styles_count: int = 10
-            ) -> List:
+    ) -> List:
         """
         Generate different variations of base_instruction by mixing thinking styles.
 
@@ -124,7 +124,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
             self.logger.info(
                 f"mutation_round={mutation_round} mutated_sample_prompt={mutated_sample_prompt}"
                 f"mutated_prompt_generation={generated_mutated_prompt}"
-                )
+            )
 
         return candidate_prompts
 
@@ -132,7 +132,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
     def critique_and_refine(
             self, prompt: str, critique_example_set: List,
             further_enhance: bool = False
-            ) -> str:
+    ) -> str:
         """
         For the given prompt and examples, generate critique using LLM. Then using the generated critique, refine the prompt using LLM.
 
@@ -147,7 +147,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
         example_string = self.data_processor.collate_to_str(
             critique_example_set,
             self.prompt_pool.quest_reason_ans
-            )
+        )
 
         if further_enhance:
             # Prompt to get critique on the prompt for which we got the examples right
@@ -164,7 +164,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
             examples=example_string,
             critique=critique_text,
             steps_per_sample=1
-            )
+        )
 
         refined_prompts = self.chat_completion(critique_refine_prompt, self.prompt_pool.expert_profile)
 
@@ -180,18 +180,20 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
             f"critique received from LLM:\n {critique_text}"
             f"Prompt to get Refinement after critique, from LLM:\n {critique_refine_prompt}"
             f"Refined prompts received from LLM:\n {final_refined_prompts}"
-            )
+        )
 
         return final_refined_prompts
 
-    async def _process_single_instruction(self, instruction: str, params: PromptOptimizationParams, sem: asyncio.Semaphore) -> List:
+    async def _process_single_instruction(
+            self, instruction: str, params: PromptOptimizationParams, sem: asyncio.Semaphore
+            ) -> List:
         """Process a single instruction with concurrency control"""
         async with sem:
             correct_count, count = 0, 0
             critique_example_set = []
             dataset_subset = random.sample(self.dataset, params.questions_batch_size)
             questions_pool = [example[DatasetSpecificProcessing.QUESTION_LITERAL] for example in dataset_subset]
-            
+
             while not critique_example_set and \
                     correct_count < params.min_correct_count and \
                     count < params.max_eval_batches:
@@ -207,14 +209,14 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
                 loop = asyncio.get_event_loop()
                 generated_text = await loop.run_in_executor(None, self.chat_completion, solve_prompt)
                 critique_example_set = await loop.run_in_executor(None, self.evaluate, generated_text, dataset_subset)
-                
+
                 if not critique_example_set:
                     dataset_subset = random.sample(self.dataset, params.questions_batch_size)
                     questions_pool = [example[DatasetSpecificProcessing.QUESTION_LITERAL] for example in dataset_subset]
                     correct_count += 1
-                
+
                 print(f"critique_example_set: {bool(critique_example_set)}, correct_count: {correct_count}")
-            
+
             print(f"Loop completed for instruction {instruction[:20]}...")
             return [instruction, correct_count / count, dataset_subset]
 
@@ -233,14 +235,14 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
         """
         # Get max concurrent calls from env var with default
         max_concurrent = int(os.environ.get('PROMPTWIZARD_MAX_CONCURRENT', '8'))
-        
+
         # Create semaphore for concurrency control
         sem = asyncio.Semaphore(max_concurrent)
 
         # Create and run tasks for all instructions
         async def process_all():
-            tasks = [self._process_single_instruction(instruction, params, sem) 
-                    for instruction in instructions]
+            tasks = [self._process_single_instruction(instruction, params, sem)
+                     for instruction in instructions]
             return await asyncio.gather(*tasks)
 
         # Run async operations in event loop
@@ -321,7 +323,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
             prompt_score_list, key=lambda x: [x[self.GetPromptScoreIndex.SCORE],
                                               len(x[self.GetPromptScoreIndex.PROMPT_STR])],
             reverse=True
-            )
+        )
         sorted_top_n_prompts = sorted_prompts[:top_n]
         self.logger.debug(f"Sorted top n prompts:  {sorted_top_n_prompts}")
         return sorted_top_n_prompts
@@ -380,7 +382,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
             instruction=instruction,
             question=question,
             answer=answer
-            )
+        )
         return self.chat_completion(user_prompt=prompt_template)
 
     @iolog.log_io_params
@@ -405,7 +407,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
         """
         prompt_template = self.prompt_pool.intent_template.format(
             task_description=task_description, instruction=instruction
-            )
+        )
         return self.chat_completion(user_prompt=prompt_template)
 
     @iolog.append_to_chained_log
@@ -424,7 +426,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
             examples=example_string,
             task_description=params.task_description,
             num_examples=params.few_shot_count
-            )
+        )
 
         critique = self.chat_completion(few_shot_critique_prompt, self.prompt_pool.expert_profile)
 
@@ -438,7 +440,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
             critique=critique,
             task_description=params.task_description,
             num_examples=params.few_shot_count
-            )
+        )
         synthetic_examples = self.chat_completion(few_shot_opt_prompt, self.prompt_pool.expert_profile)
         synthetic_examples = self.extract_examples_frm_response(synthetic_examples)
 
@@ -456,7 +458,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
             prompt=params.base_instruction,
             task_description=params.task_description,
             num_examples=params.num_train_examples
-            )
+        )
 
         critique = self.chat_completion(few_shot_critique_prompt, self.prompt_pool.expert_profile)
 
@@ -468,7 +470,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
             critique=critique,
             task_description=params.task_description,
             num_examples=params.num_train_examples
-            )
+        )
         synthetic_examples = self.chat_completion(few_shot_opt_prompt, self.prompt_pool.expert_profile)
         synthetic_examples = self.extract_examples_frm_response(synthetic_examples)
         return synthetic_examples
@@ -480,7 +482,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
             example_string = self.data_processor.collate_to_str(
                 examples,
                 self.prompt_pool.quest_reason_ans
-                )
+            )
         else:
             example_string = ""
             for example in examples:
@@ -491,19 +493,19 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
                 example_string += self.prompt_pool.quest_reason_ans.format(
                     question=example[DatasetSpecificProcessing.QUESTION_LITERAL],
                     answer=answer
-                    )
+                )
 
         meta_critique_prompt = self.prompt_pool.meta_critique_template.format(
             instruction=params.base_instruction,
             examples=example_string
-            )
+        )
         critique_text = self.chat_completion(meta_critique_prompt, self.prompt_pool.expert_profile)
         critique_refine_prompt = self.prompt_pool.critique_refine_template.format(
             instruction=params.base_instruction,
             examples=example_string,
             critique=critique_text,
             steps_per_sample=1
-            )
+        )
         refined_prompts = self.chat_completion(critique_refine_prompt)
 
         if self.data_processor != None:
@@ -516,7 +518,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
     def get_best_prompt(
             self, params: PromptOptimizationParams, use_examples=False, run_without_train_examples=False,
             generate_synthetic_examples=False, top_n=1
-            ) -> (List[str], Any):
+    ) -> (List[str], Any):
         """
         Perform `params.max_iterations` iterations for optimizing your prompt. And return the best prompt found so far.
 
@@ -533,13 +535,13 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
                 self.logger.info(
                     f"{CommonLogsStr.LOG_SEPERATOR} + Starting iteration: {round_num} \n "
                     f"current_base_instruction: {current_base_instruction}"
-                    )
+                )
                 candidate_prompts = self.gen_different_styles(
                     current_base_instruction,
                     params.task_description,
                     params.mutation_rounds + 1,
                     params.style_variation
-                    )
+                )
 
                 if run_without_train_examples:
                     prompt_index = 1
@@ -559,15 +561,15 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
                         intent_keywords = self.generate_intent_keywords(
                             params.task_description,
                             params.base_instruction
-                            )
+                        )
 
                         final_best_prompt += "Keywords: " + intent_keywords
                         print("_______________________________________________________________________")
                         print(
                             "\nVariations " + str(
                                 prompt_index
-                                ) + ":\nExpert Profile:\n" + expert_identity + ":\nPrompt:\n" + final_best_prompt
-                            )
+                            ) + ":\nExpert Profile:\n" + expert_identity + ":\nPrompt:\n" + final_best_prompt
+                        )
                         prompt_index += 1
                     return "", ""
                 prompt_score_list = self.get_prompt_score(candidate_prompts, params)
@@ -579,7 +581,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
                     prompt_score_list = self.select_top_prompts(
                         refined_prompt_score_list + prompt_score_list,
                         params.top_n
-                        )
+                    )
 
                 current_base_instruction = prompt_score_list[0][self.GetPromptScoreIndex.PROMPT_STR]
                 self.iolog.append_dict_to_chained_logs(
@@ -587,7 +589,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
                      "best_prompt": current_base_instruction,
                      "score": prompt_score_list[0][self.GetPromptScoreIndex.SCORE]
                      }
-                    )
+                )
 
             examples = []
 
@@ -638,7 +640,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
                     params.base_instruction,
                     example[DatasetSpecificProcessing.QUESTION_LITERAL],
                     example[DatasetSpecificProcessing.FINAL_ANSWER_LITERAL]
-                    )
+                )
 
                 example[DatasetSpecificProcessing.ANSWER_WITH_REASON_LITERAL] = f"{reason} " + \
                                                                                 f"{DatasetSpecificProcessing.ANSWER_START}" + \
@@ -656,11 +658,11 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
                 example_string += self.prompt_pool.quest_reason_ans.format(
                     question=example[DatasetSpecificProcessing.QUESTION_LITERAL],
                     answer=answer
-                    )
+                )
 
         # Initialize top_prompts list
         top_prompts = []
-        
+
         if params.few_shot_count == 0:
             # Get top N prompts from candidate prompts
             for i in range(min(top_n, len(candidate_prompts))):
@@ -690,7 +692,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
             intent_keywords = self.generate_intent_keywords(
                 params.task_description,
                 params.base_instruction
-                )
+            )
 
             final_best_prompt += "Keywords: " + intent_keywords
 
