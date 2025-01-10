@@ -1,5 +1,7 @@
+import os
 from dataclasses import dataclass
 from typing import List
+import json
 
 
 @dataclass
@@ -59,5 +61,22 @@ aimo_sample_problems: List[MathProblem] = [
     )
 ]
 
+def save_problems_jsonl(problems: List[MathProblem], output_file: str) -> None:
+    """Save math problems as JSONL file with question and answer keys."""
+    import json
+    with open(output_file, 'w') as f:
+        for prob in problems:
+            json_line = {
+                'question': prob.problem_statement,
+                'answer': str(prob.solution)  # Convert to string for consistency
+            }
+            f.write(json.dumps(json_line) + '\n')
+
 if __name__ == '__main__':
-    print(aimo_sample_problems[0].problem_statement)
+    # Create data directory if it doesn't exist
+    if not os.path.exists('opt_data'):
+        os.makedirs('opt_data')
+        
+    # Save problems as JSONL
+    save_problems_jsonl(aimo_sample_problems, 'opt_data/sample_problems.jsonl')
+    print(f"Saved {len(aimo_sample_problems)} problems to opt_data/sample_problems.jsonl")
