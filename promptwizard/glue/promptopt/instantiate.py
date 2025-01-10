@@ -120,23 +120,25 @@ class GluePromptOpt:
             )
 
     def get_best_prompt(
-            self, use_examples=False, run_without_train_examples=False, generate_synthetic_examples=False
-            ) -> (str, Any):
+            self, use_examples=False, run_without_train_examples=False, generate_synthetic_examples=False, top_n=1
+            ) -> (List[str], Any):
         """
         Call get_best_prompt() method of class PromptOptimizer & return its value.
-        :return: (best_prompt, expert_profile)
-            best_prompt-> Best prompt for a given task description
+        :param top_n: Number of top prompts to return
+        :return: (best_prompts, expert_profile)
+            best_prompts-> List of top N best prompts for the task description
             expert_profile-> Description of an expert who is apt to solve the task at hand. LLM would be asked to take
             identity of described in expert_profile.
         """
         start_time = time.time()
-        self.BEST_PROMPT, self.EXPERT_PROFILE = self.prompt_opt.get_best_prompt(
+        self.BEST_PROMPTS, self.EXPERT_PROFILE = self.prompt_opt.get_best_prompt(
             self.prompt_opt_param, use_examples=use_examples, run_without_train_examples=run_without_train_examples,
-            generate_synthetic_examples=generate_synthetic_examples
+            generate_synthetic_examples=generate_synthetic_examples, top_n=top_n
             )
+        self.BEST_PROMPT = self.BEST_PROMPTS[0] if self.BEST_PROMPTS else None
 
-        self.logger.info(f"Time taken to find best prompt: {(time.time() - start_time)} sec")
-        return self.BEST_PROMPT, self.EXPERT_PROFILE
+        self.logger.info(f"Time taken to find best prompts: {(time.time() - start_time)} sec")
+        return self.BEST_PROMPTS, self.EXPERT_PROFILE
 
     def evaluate(self, test_dataset_jsonl: str) -> float:
         """

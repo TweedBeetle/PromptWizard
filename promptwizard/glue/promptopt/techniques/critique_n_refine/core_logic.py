@@ -515,8 +515,8 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
 
     def get_best_prompt(
             self, params: PromptOptimizationParams, use_examples=False, run_without_train_examples=False,
-            generate_synthetic_examples=False
-            ) -> (str, Any):
+            generate_synthetic_examples=False, top_n=1
+            ) -> (List[str], Any):
         """
         Perform `params.max_iterations` iterations for optimizing your prompt. And return the best prompt found so far.
 
@@ -659,11 +659,15 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
                     )
 
         if params.few_shot_count == 0:
-            final_best_prompt = self.prompt_pool.final_prompt.format(
-                instruction=params.base_instruction,
-                answer_format=params.answer_format,
-                few_shot_examples=""
-            )
+            # Get top N prompts
+            top_prompts = []
+            for i in range(min(top_n, len(candidate_prompts))):
+                final_prompt = self.prompt_pool.final_prompt.format(
+                    instruction=candidate_prompts[i],
+                    answer_format=params.answer_format,
+                    few_shot_examples=""
+                )
+                top_prompts.append(final_prompt)
         else:
             final_best_prompt = self.prompt_pool.final_prompt.format(
                 instruction=params.base_instruction,
@@ -689,4 +693,4 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
         self.iolog.dump_chained_log_to_file("best_prompt")
         self.logger.info(f"Final best prompt: {final_best_prompt}")
 
-        return final_best_prompt, expert_identity
+        return top_prompts, expert_identity
