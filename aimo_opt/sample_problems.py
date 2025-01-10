@@ -61,6 +61,7 @@ aimo_sample_problems: List[MathProblem] = [
     )
 ]
 
+
 def save_problems_jsonl(problems: List[MathProblem], output_file: str) -> None:
     """Save math problems as JSONL file with question and answer keys."""
     import json
@@ -72,11 +73,12 @@ def save_problems_jsonl(problems: List[MathProblem], output_file: str) -> None:
             }
             f.write(json.dumps(json_line) + '\n')
 
+
 if __name__ == '__main__':
     # Create data directory if it doesn't exist
     if not os.path.exists('opt_data'):
         os.makedirs('opt_data')
-        
+
     # Save problems as JSONL
     save_problems_jsonl(aimo_sample_problems, 'opt_data/sample_problems.jsonl')
     print(f"Saved {len(aimo_sample_problems)} problems to opt_data/sample_problems.jsonl")
