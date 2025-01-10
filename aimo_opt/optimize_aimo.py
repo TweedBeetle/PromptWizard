@@ -57,8 +57,8 @@ class AMCProcessor(DatasetSpecificProcessing):
 
 def main():
     # Create data directory if it doesn't exist
-    if not os.path.exists("aimo_opt/opt_data"):
-        os.makedirs("aimo_opt/opt_data")
+    if not os.path.exists("opt_data"):
+        os.makedirs("opt_data")
 
     # Load AMC validation dataset and filter for 2024
     import pandas as pd
@@ -76,12 +76,12 @@ def main():
     test_data = dataset[25:]
 
     # Save train and test files
-    amc_processor.dataset_to_jsonl("aimo_opt/opt_data/train.jsonl", dataset=train_data)
-    amc_processor.dataset_to_jsonl("aimo_opt/opt_data/test.jsonl", dataset=test_data)
+    amc_processor.dataset_to_jsonl("opt_data/train.jsonl", dataset=train_data)
+    amc_processor.dataset_to_jsonl("opt_data/test.jsonl", dataset=test_data)
 
     # Set up paths
-    train_file_name = os.path.join("aimo_opt/opt_data", "train.jsonl")
-    test_file_name = os.path.join("aimo_opt/opt_data", "test.jsonl")
+    train_file_name = os.path.join("opt_data", "train.jsonl")
+    test_file_name = os.path.join("opt_data", "test.jsonl")
     path_to_config = "configs"
 
     # promptopt_config_path = os.path.join(path_to_config, "promptopt_config.yaml")
@@ -107,7 +107,7 @@ def main():
     )
 
     # Save results
-    results_dir = "aimo_opt/results"
+    results_dir = "results"
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
 

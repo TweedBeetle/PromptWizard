@@ -9,12 +9,12 @@ questions_batch_size: 1
 min_correct_count: 2
 max_eval_batches: 4
 top_n: 1
-task_description: "You are a test solver. You will be given a test problem to solve."
-base_instruction: "Solve step by step."
-answer_format: "Wrap your final answer between <ANS_START> and <ANS_END> tags."
+task_description: "You are a mathematics expert specializing in integer solution math problems. You will be given an mathematics problem which you need to solve."
+base_instruction: "Let's solve this step by step. Show your reasoning clearly and arrive at a single numerical answer."
+answer_format: "After your solution, wrap only your final numerical answer between <ANS_START> and <ANS_END> tags."
 seen_set_size: 10
-few_shot_count: 3
+few_shot_count: 2
 num_train_examples: 5
-generate_reasoning: true
-generate_expert_identity: false
-generate_intent_keywords: false
+generate_reasoning: false
+generate_expert_identity: true
+generate_intent_keywords: true
