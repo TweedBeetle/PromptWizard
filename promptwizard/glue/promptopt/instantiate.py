@@ -140,6 +140,15 @@ class GluePromptOpt:
         self.logger.info(f"Time taken to find best prompts: {(time.time() - start_time)} sec")
         return self.BEST_PROMPTS, self.EXPERT_PROFILE
 
+    async def _process_single_example(self, json_obj, sem):
+        """Process a single example with concurrency control"""
+        async with sem:
+            answer = self.predict_and_access(
+                json_obj[DatasetSpecificProcessing.QUESTION_LITERAL],
+                json_obj[DatasetSpecificProcessing.FINAL_ANSWER_LITERAL]
+            )
+            return answer[self.EvalLiterals.IS_CORRECT], answer
+
     def evaluate(self, test_dataset_jsonl: str) -> float:
         """
         Evaluate the performance of self.BEST_PROMPT over test dataset. Return the accuracy.
@@ -147,6 +156,7 @@ class GluePromptOpt:
         :param test_dataset_jsonl: Path to jsonl file that has test dataset
         :return: Percentage accuracy
         """
+        import asyncio
 
         start_time = time.time()
         self.logger.info(f"Evaluation started {CommonLogsStr.LOG_SEPERATOR}")
@@ -154,22 +164,38 @@ class GluePromptOpt:
             self.logger.error(
                 "BEST_PROMPT attribute is not set. Please set self.BEST_PROMPT attribute of this object, "
                 "either manually or by calling get_best_prompt() method."
-                )
+            )
             return
 
+        # Get max concurrent calls from env var with default
+        max_concurrent = int(os.environ.get('PROMPTWIZARD_MAX_CONCURRENT', '8'))
+        sem = asyncio.Semaphore(max_concurrent)
+
+        async def process_all(examples):
+            tasks = []
+            for json_obj in examples:
+                task = self._process_single_example(json_obj, sem)
+                tasks.append(task)
+            return await asyncio.gather(*tasks)
+
+        # Load all examples
+        examples = list(read_jsonl_row(test_dataset_jsonl))
+        
+        # Run async operations in event loop
+        loop = asyncio.get_event_loop()
+        results = loop.run_until_complete(process_all(examples))
+
+        # Process results
         total_correct = 0
         total_count = 0
-        for json_obj in read_jsonl_row(test_dataset_jsonl):
-            answer = self.predict_and_access(
-                json_obj[DatasetSpecificProcessing.QUESTION_LITERAL],
-                json_obj[DatasetSpecificProcessing.FINAL_ANSWER_LITERAL]
-                )
-
-            total_correct += answer[self.EvalLiterals.IS_CORRECT]
+        for i, (is_correct, answer) in enumerate(results):
+            total_correct += is_correct
             total_count += 1
-            result = {"accuracy": f"{total_correct}/{total_count} : {total_correct / total_count}%",
-                      "predicted": answer[self.EvalLiterals.PREDICTED_ANS],
-                      "actual": json_obj[DatasetSpecificProcessing.FINAL_ANSWER_LITERAL]}
+            result = {
+                "accuracy": f"{total_correct}/{total_count} : {total_correct / total_count}%",
+                "predicted": answer[self.EvalLiterals.PREDICTED_ANS],
+                "actual": examples[i][DatasetSpecificProcessing.FINAL_ANSWER_LITERAL]
+            }
             self.iolog.append_dict_to_chained_logs(result)
             self.logger.info(result)
 
