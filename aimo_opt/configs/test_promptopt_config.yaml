@@ -12,7 +12,7 @@ top_n: 1
 task_description: "You are a mathematics expert specializing in integer solution math problems. You will be given an mathematics problem which you need to solve."
 base_instruction: "Let's solve this step by step. Show your reasoning clearly and arrive at a single numerical answer."
 answer_format: "After your solution, wrap only your final numerical answer between <ANS_START> and <ANS_END> tags."
-seen_set_size: 10
+seen_set_size: 5
 few_shot_count: 2
 num_train_examples: 5
 generate_reasoning: false

@@ -60,24 +60,22 @@ def main():
     if not os.path.exists("opt_data"):
         os.makedirs("opt_data")
 
-    # Load AMC validation dataset and filter for 2024
+    # Load AIME 2024 problems for test set
     import pandas as pd
-    dataset = pd.read_parquet("data/aimo-validation-aime/data/train-00000-of-00001.parquet")
+    test_dataset = pd.read_parquet("data/aimo-validation-aime/data/train-00000-of-00001.parquet")
+    test_dataset = test_dataset[test_dataset['url'].str.contains('2024', na=False)]
+    test_dataset = test_dataset.to_dict('records')
 
-    # Filter for 2024 problems by checking URL
-    dataset = dataset[dataset['url'].str.contains('2024', na=False)]
-    dataset = dataset.to_dict('records')
+    # Load sample problems for training set
+    from sample_problems import aimo_sample_problems
+    train_data = [{"problem": p.problem_statement, "answer": p.solution} for p in aimo_sample_problems]
 
     # Initialize processor
     amc_processor = AMCProcessor()
 
-    # Split into train/test (using first 25 for train, rest for test)
-    train_data = dataset[:25]
-    test_data = dataset[25:]
-
     # Save train and test files
     amc_processor.dataset_to_jsonl("opt_data/train.jsonl", dataset=train_data)
-    amc_processor.dataset_to_jsonl("opt_data/test.jsonl", dataset=test_data)
+    amc_processor.dataset_to_jsonl("opt_data/test.jsonl", dataset=test_dataset)
 
     # Set up paths
     train_file_name = os.path.join("opt_data", "train.jsonl")
