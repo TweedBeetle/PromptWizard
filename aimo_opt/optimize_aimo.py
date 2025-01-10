@@ -42,15 +42,19 @@ class AMCProcessor(DatasetSpecificProcessing):
 
         # Extract numeric answer from the response
         try:
-            # Look for answer between tags if present
-            if "<ANS_START>" in answer and "<ANS_END>" in answer:
-                start_idx = answer.find("<ANS_START>") + len("<ANS_START>")
-                end_idx = answer.find("<ANS_END>")
-                answer = answer[start_idx:end_idx].strip()
-
-            # Convert to numeric and back to string to standardize
-            answer = str(int(float(answer.strip())))
-            return answer
+            # Look for answer in \boxed{} notation
+            import re
+            boxed_pattern = r'\\boxed\{([^}]+)\}'
+            matches = re.findall(boxed_pattern, answer)
+            
+            if matches:
+                # Take the last boxed answer if multiple exist
+                answer = matches[-1].strip()
+                # Convert to numeric and back to string to standardize
+                answer = str(int(float(answer)))
+                return answer
+            
+            return self.INVALID_ANS
         except:
             return self.INVALID_ANS
 
