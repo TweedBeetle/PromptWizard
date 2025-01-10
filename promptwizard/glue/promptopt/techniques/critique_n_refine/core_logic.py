@@ -1,5 +1,7 @@
 import random
 import re
+import os
+import asyncio
 from os.path import join
 from tqdm import tqdm
 from typing import Any, Dict, List
@@ -182,27 +184,14 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
 
         return final_refined_prompts
 
-    @iolog.log_io_params
-    def get_prompt_score(self, instructions: List[str], params: PromptOptimizationParams) -> List:
-        """
-        For each of the prompts in input, make LLM answer a set questions from dataset.
-        Check if the answers are correct. Assign score to each prompt based on the number of batches of questions
-        answered correctly. Once you get a prompt that gets all the questions right, you can stop the process.
-
-        :params instructions: Prompts using which we'll try to solve the task
-        :params params: Object of PromptOptimizationParams class, that has hyperparameters related to prompt
-        optimization technique in context.
-        :return: A tuple with (Prompt string,
-                               score corresponding to that prompt,
-                               set of examples over which we evaluated)
-        """
-        prompt_score_list = []
-
-        for instruction in instructions:
+    async def _process_single_instruction(self, instruction: str, params: PromptOptimizationParams, sem: asyncio.Semaphore) -> List:
+        """Process a single instruction with concurrency control"""
+        async with sem:
             correct_count, count = 0, 0
             critique_example_set = []
             dataset_subset = random.sample(self.dataset, params.questions_batch_size)
             questions_pool = [example[DatasetSpecificProcessing.QUESTION_LITERAL] for example in dataset_subset]
+            
             while not critique_example_set and \
                     correct_count < params.min_correct_count and \
                     count < params.max_eval_batches:
@@ -214,18 +203,49 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
                     questions='\n'.join(questions_pool)
                 )
 
-                generated_text = self.chat_completion(solve_prompt)
-                critique_example_set = self.evaluate(generated_text, dataset_subset)
+                # Run synchronous operations in executor to avoid blocking
+                loop = asyncio.get_event_loop()
+                generated_text = await loop.run_in_executor(None, self.chat_completion, solve_prompt)
+                critique_example_set = await loop.run_in_executor(None, self.evaluate, generated_text, dataset_subset)
+                
                 if not critique_example_set:
-                    # If all the questions were answered correctly, then we need to get a new set of questions to answer
                     dataset_subset = random.sample(self.dataset, params.questions_batch_size)
                     questions_pool = [example[DatasetSpecificProcessing.QUESTION_LITERAL] for example in dataset_subset]
                     correct_count += 1
-                # 
-                print("critique_example_set, correct_count")
-                print(critique_example_set, correct_count)
-            print("Loop completed")
-            prompt_score_list.append([instruction, correct_count / count, dataset_subset])
+                
+                print(f"critique_example_set: {bool(critique_example_set)}, correct_count: {correct_count}")
+            
+            print(f"Loop completed for instruction {instruction[:20]}...")
+            return [instruction, correct_count / count, dataset_subset]
+
+    @iolog.log_io_params
+    def get_prompt_score(self, instructions: List[str], params: PromptOptimizationParams) -> List:
+        """
+        For each of the prompts in input, make LLM answer a set questions from dataset.
+        Uses concurrent processing with a semaphore to limit concurrent API calls.
+
+        :params instructions: Prompts using which we'll try to solve the task
+        :params params: Object of PromptOptimizationParams class, that has hyperparameters related to prompt
+        optimization technique in context.
+        :return: A tuple with (Prompt string,
+                               score corresponding to that prompt,
+                               set of examples over which we evaluated)
+        """
+        # Get max concurrent calls from env var with default
+        max_concurrent = int(os.environ.get('PROMPTWIZARD_MAX_CONCURRENT', '8'))
+        
+        # Create semaphore for concurrency control
+        sem = asyncio.Semaphore(max_concurrent)
+
+        # Create and run tasks for all instructions
+        async def process_all():
+            tasks = [self._process_single_instruction(instruction, params, sem) 
+                    for instruction in instructions]
+            return await asyncio.gather(*tasks)
+
+        # Run async operations in event loop
+        loop = asyncio.get_event_loop()
+        prompt_score_list = loop.run_until_complete(process_all())
 
         self.logger.info(f"prompt_score_list {prompt_score_list}")
         return prompt_score_list
