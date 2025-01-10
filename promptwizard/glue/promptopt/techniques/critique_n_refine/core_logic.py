@@ -658,9 +658,11 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
                     answer=answer
                     )
 
+        # Initialize top_prompts list
+        top_prompts = []
+        
         if params.few_shot_count == 0:
-            # Get top N prompts
-            top_prompts = []
+            # Get top N prompts from candidate prompts
             for i in range(min(top_n, len(candidate_prompts))):
                 final_prompt = self.prompt_pool.final_prompt.format(
                     instruction=candidate_prompts[i],
@@ -669,11 +671,13 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
                 )
                 top_prompts.append(final_prompt)
         else:
-            final_best_prompt = self.prompt_pool.final_prompt.format(
+            # Create single prompt with examples
+            final_prompt = self.prompt_pool.final_prompt.format(
                 instruction=params.base_instruction,
                 answer_format=params.answer_format,
                 few_shot_examples=example_string
             )
+            top_prompts.append(final_prompt)
 
         expert_identity = self.prompt_pool.system_prompt
         if params.generate_expert_identity:
