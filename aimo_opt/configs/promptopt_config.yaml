@@ -1,20 +1,20 @@
 prompt_technique_name: "critique_n_refine"
-unique_model_id: QwQ-32B-Preview
-mutate_refine_iterations: 2
-mutation_rounds: 2
+unique_model_id: gpt-4o-mini
+mutate_refine_iterations: 3 # 5
+mutation_rounds: 3 # 5
 refine_instruction: true
-refine_task_eg_iterations: 2
-style_variation: 3
+refine_task_eg_iterations: 3 # 5
+style_variation: 5
 questions_batch_size: 1
-min_correct_count: 2
-max_eval_batches: 4
+min_correct_count: 3
+max_eval_batches: 6
 top_n: 1
 task_description: "You are a mathematics expert specializing in integer solution math problems. You will be given an mathematics problem which you need to solve."
 base_instruction: "Let's solve this step by step. Show your reasoning clearly and arrive at a single numerical answer."
 answer_format: "After your solution, wrap only your final numerical answer between <ANS_START> and <ANS_END> tags."
-seen_set_size: 5
-few_shot_count: 2
-num_train_examples: 5
-generate_reasoning: false
+seen_set_size: 25
+few_shot_count: 5
+num_train_examples: 30
+generate_reasoning: generate_reasoning
 generate_expert_identity: true
 generate_intent_keywords: true
