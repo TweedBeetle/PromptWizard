@@ -107,12 +107,13 @@ def main():
     )
 
     # Save results
-    if not os.path.exists("results"):
-        os.makedirs("results")
+    results_dir = "aimo_opt/results"
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
 
-    with open("aimo_opt/results/best_prompt.pkl", 'wb') as f:
+    with open(os.path.join(results_dir, "best_prompt.pkl"), 'wb') as f:
         pickle.dump(best_prompt, f)
-    with open("aimo_opt/results/expert_profile.pkl", 'wb') as f:
+    with open(os.path.join(results_dir, "expert_profile.pkl"), 'wb') as f:
         pickle.dump(expert_profile, f)
 
     print(f"Best prompt: {best_prompt}")
