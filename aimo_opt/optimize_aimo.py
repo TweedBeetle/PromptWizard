@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv(override=True)
 
+from loguru import logger
 
 class AMCProcessor(DatasetSpecificProcessing):
     def __init__(self):
@@ -46,15 +47,17 @@ class AMCProcessor(DatasetSpecificProcessing):
             import re
             boxed_pattern = r'\\boxed\{([^}]+)\}'
             matches = re.findall(boxed_pattern, answer)
-            
+
             if matches:
                 # Take the last boxed answer if multiple exist
                 answer = matches[-1].strip()
                 # Convert to numeric and back to string to standardize
                 answer = str(int(float(answer)))
                 return answer
-            
-            return self.INVALID_ANS
+
+            # nicely log warnign contiaing the answer  AI!
+
+            return self.INVALID_ANS  # @todo:0: handle python code in response. maybe judge in advance if the problem is best solved via python vs pure math
         except:
             return self.INVALID_ANS
 
@@ -66,30 +69,34 @@ def main():
 
     # Load AIME 2024 problems for test set
     import pandas as pd
-    test_dataset = pd.read_parquet("data/aimo-validation-aime/data/train-00000-of-00001.parquet")
-    test_dataset = test_dataset[test_dataset['url'].str.contains('2024', na=False)]
-    test_dataset = test_dataset.to_dict('records')
+    train_data = pd.read_parquet("data/aimo-validation-aime/data/train-00000-of-00001.parquet")
+    train_data = train_data[train_data['url'].str.contains('2024', na=False)]
+    train_data = train_data.to_dict('records')
 
     # Load sample problems for training set
     from sample_problems import aimo_sample_problems
-    train_data = [{"problem": p.problem_statement, "answer": p.solution} for p in aimo_sample_problems]
+    test_data = [{"problem": p.problem_statement, "answer": p.solution} for p in aimo_sample_problems]
 
     # Initialize processor
     amc_processor = AMCProcessor()
 
     # Save train and test files
     amc_processor.dataset_to_jsonl("opt_data/train.jsonl", dataset=train_data)
-    amc_processor.dataset_to_jsonl("opt_data/test.jsonl", dataset=test_dataset)
 
-    # Set up paths
-    train_file_name = os.path.join("opt_data", "train.jsonl")
+    amc_processor.dataset_to_jsonl("opt_data/test.jsonl", dataset=test_data)
+
+    # Set up pathsÔ
+    # train_file_name = os.path.join("opt_data", "train.jsonl")
+    logger.critical("TEMP_TWEAK: training on test")  # @TEMP_TWEAK
+    train_file_name = os.path.join("opt_data", "test.jsonl")
+
     test_file_name = os.path.join("opt_data", "test.jsonl")
     path_to_config = "configs"
 
-    # promptopt_config_path = os.path.join(path_to_config, "promptopt_config.yaml")
+    promptopt_config_path = os.path.join(path_to_config, "promptopt_config.yaml")
 
-    logger.critical("TEMP_TWEAK: using test config")  # @TEMP_TWEAK
-    promptopt_config_path = os.path.join(path_to_config, "test_promptopt_config.yaml")
+    # logger.critical("TEMP_TWEAK: using test config")  # @TEMP_TWEAK
+    # promptopt_config_path = os.path.join(path_to_config, "test_promptopt_config.yaml")
 
     setup_config_path = os.path.join(path_to_config, "setup_config.yaml")
 
@@ -105,7 +112,7 @@ def main():
     best_prompt, expert_profile = gp.get_best_prompt(
         use_examples=True,
         run_without_train_examples=False,
-        generate_synthetic_examples=False
+        generate_synthetic_examples=False,
     )
 
     # Save results
