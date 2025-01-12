@@ -55,8 +55,7 @@ class AMCProcessor(DatasetSpecificProcessing):
                 answer = str(int(float(answer)))
                 return answer
 
-            # nicely log warnign contiaing the answer  AI!
-
+            logger.warning(f"Could not find boxed answer in response: {answer}")
             return self.INVALID_ANS  # @todo:0: handle python code in response. maybe judge in advance if the problem is best solved via python vs pure math
         except:
             return self.INVALID_ANS
