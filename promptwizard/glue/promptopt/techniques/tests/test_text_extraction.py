@@ -106,6 +106,11 @@ def test_real_world_examples():
         - Input value was 7
         - Multiplied by 6 
         - Therefore 7 * 6 = 42<ANS_END>
+        """,
+
+        # Example of refined prompts
+        """Here are the refined prompts:
+        <START>To solve this problem, apply your knowledge of number theory, Fibonacci numbers, and prime factors, and use mathematical techniques such as modular arithmetic and prime factorization to carefully analyze the given conditions and constraints. Break down the problem into smaller parts, systematically explore the possible values of n, and precisely calculate the required quantities to determine the number of prime factors of N, ensuring a rigorous and precise approach to reach an integer numerical answer.</END>
         """
     ]
 
