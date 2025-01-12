@@ -89,6 +89,8 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
             {"role": "user", "content": user_prompt}
         ]
         response = LLMMgr.chat_completion(messages)
+        if not response:
+            pass
         return response
 
     @iolog.log_io_params
@@ -168,12 +170,13 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
 
         refined_prompts = self.chat_completion(critique_refine_prompt, self.prompt_pool.expert_profile)
 
-        refined_prompts = re.findall(DatasetSpecificProcessing.TEXT_DELIMITER_PATTERN, refined_prompts)
+        extracted_refined_prompts = re.findall(DatasetSpecificProcessing.TEXT_DELIMITER_PATTERN, refined_prompts)
 
-        if refined_prompts:
-            final_refined_prompts = refined_prompts[0]
+        if extracted_refined_prompts:
+            final_refined_prompts = extracted_refined_prompts[0]
         else:
-            raise ValueError("The LLM ouput is not in the expected format. Please rerun the code...")
+            pass
+            raise ValueError("The LLM output is not in the expected format. Please rerun the code...")
 
         self.logger.info(
             f"Prompt to get critique:\n {meta_critique_prompt}"
@@ -186,7 +189,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
 
     async def _process_single_instruction(
             self, instruction: str, params: PromptOptimizationParams, sem: asyncio.Semaphore
-            ) -> List:
+    ) -> List:
         """Process a single instruction with concurrency control"""
         async with sem:
             correct_count, count = 0, 0
@@ -517,8 +520,8 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
 
     def get_best_prompt(
             self, params: PromptOptimizationParams, use_examples=False, run_without_train_examples=False,
-            generate_synthetic_examples=False, top_n=1
-    ) -> (List[str], Any):
+            generate_synthetic_examples=False
+    ) -> (str, Any):
         """
         Perform `params.max_iterations` iterations for optimizing your prompt. And return the best prompt found so far.
 
@@ -660,26 +663,18 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
                     answer=answer
                 )
 
-        # Initialize top_prompts list
-        top_prompts = []
-
         if params.few_shot_count == 0:
-            # Get top N prompts from candidate prompts
-            for i in range(min(top_n, len(candidate_prompts))):
-                final_prompt = self.prompt_pool.final_prompt.format(
-                    instruction=candidate_prompts[i],
-                    answer_format=params.answer_format,
-                    few_shot_examples=""
-                )
-                top_prompts.append(final_prompt)
+            final_best_prompt = self.prompt_pool.final_prompt.format(
+                instruction=params.base_instruction,
+                answer_format=params.answer_format,
+                few_shot_examples=""
+            )
         else:
-            # Create single prompt with examples
-            final_prompt = self.prompt_pool.final_prompt.format(
+            final_best_prompt = self.prompt_pool.final_prompt.format(
                 instruction=params.base_instruction,
                 answer_format=params.answer_format,
                 few_shot_examples=example_string
             )
-            top_prompts.append(final_prompt)
 
         expert_identity = self.prompt_pool.system_prompt
         if params.generate_expert_identity:
@@ -699,4 +694,4 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
         self.iolog.dump_chained_log_to_file("best_prompt")
         self.logger.info(f"Final best prompt: {final_best_prompt}")
 
-        return top_prompts, expert_identity
+        return final_best_prompt, expert_identity
