@@ -19,6 +19,7 @@ load_dotenv(override=True)
 
 from loguru import logger
 
+
 class AMCProcessor(DatasetSpecificProcessing):
     def __init__(self):
         super().__init__()
@@ -55,8 +56,9 @@ class AMCProcessor(DatasetSpecificProcessing):
                 answer = str(int(float(answer)))
                 return answer
 
-            logger.warning(f"Could not find boxed answer in response: {answer}")
-            return self.INVALID_ANS  # @todo:0: handle python code in response. maybe judge in advance if the problem is best solved via python vs pure math
+            logger.warning(f"Could not find boxed answer in response:\n{answer}")
+
+            return self.INVALID_ANS  # @todo:0: handle python code in response. maybe judge in advance if the problem is best solved via python vs pure math. maybe different python apporaches: numeric, symbolic (sympy)
         except:
             return self.INVALID_ANS
 
