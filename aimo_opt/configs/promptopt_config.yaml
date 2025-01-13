@@ -11,7 +11,7 @@ max_eval_batches: 10 # 6
 top_n: 2
 #task_description: "You are a mathematics expert specializing in integer solution math problems. You will be given an mathematics problem that has an integer solution which you need to solve."
 task_description: "Solve the given integer-solution math problem."
-base_instruction: "Let's solve this step by step. Show your reasoning clearly and arrive at a integer numerical answer."
+base_instruction: "Let's solve this step by step. You can either write Python code using numpy/sympy to solve the problem, or solve it through mathematical reasoning. Show your work clearly and arrive at an integer numerical answer."
 answer_format: "After your solution, wrap only your final numerical answer in \\boxed{} notation."
 seen_set_size: 30
 few_shot_count: 0
