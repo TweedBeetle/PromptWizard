@@ -169,15 +169,25 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
         )
 
         refined_prompts = self.chat_completion(critique_refine_prompt, self.prompt_pool.expert_profile)
+        # Fix common delimiter issues
         refined_prompts = refined_prompts.replace("</END>", "<END>")
+        # Use regex to replace END> not preceded by < with </END>
+        refined_prompts = re.sub(r'(?<!<)END>', '</END>', refined_prompts)
 
+        # Try to extract with fixed delimiters
         extracted_refined_prompts = re.findall(DatasetSpecificProcessing.TEXT_DELIMITER_PATTERN, refined_prompts)
 
-        if extracted_refined_prompts:
-            final_refined_prompts = extracted_refined_prompts[-1]
-        else:
-            pass
+        if not extracted_refined_prompts:
+            # Try to extract content between <START> and END> as fallback
+            content = re.findall(r'<START>(.*?)(?:END>|</END>)', refined_prompts, re.DOTALL)
+            if content:
+                final_refined_prompts = content[-1].strip()
+                return final_refined_prompts
+
+            logger.error(f"Could not parse LLM output: {refined_prompts}")
             raise ValueError("The LLM output is not in the expected format. Please rerun the code...")
+
+        final_refined_prompts = extracted_refined_prompts[-1]
 
         self.logger.info(
             f"Prompt to get critique:\n {meta_critique_prompt}"
