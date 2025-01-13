@@ -2,6 +2,7 @@ import random
 import re
 import os
 import asyncio
+from tenacity import retry, stop_after_attempt, wait_fixed
 from os.path import join
 from tqdm import tqdm
 from typing import Any, Dict, List
@@ -16,6 +17,10 @@ from ...constants import PromptOptimizationParams, SupportedPromptOpt
 from ...techniques.common_logic import DatasetSpecificProcessing, PromptOptimizer
 from ...techniques.critique_n_refine.base_classes import CritiqueNRefinePromptPool
 
+
+class LLMOutputFormatError(Exception):
+    """Raised when LLM output does not match expected format"""
+    pass
 
 def extract_between(start, end, text):
     """
@@ -130,7 +135,13 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
 
         return candidate_prompts
 
-    @iolog.log_io_params
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_fixed(1),
+        retry_error_callback=lambda _: "",
+        retry=(retry_if_exception_type(LLMOutputFormatError))
+    )
+    @iolog.log_io_params  
     def critique_and_refine(
             self, prompt: str, critique_example_set: List,
             further_enhance: bool = False
@@ -177,10 +188,9 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
         # Try to extract with fixed delimiters
         extracted_refined_prompts = re.findall(DatasetSpecificProcessing.TEXT_DELIMITER_PATTERN, refined_prompts)
 
-        if extracted_refined_prompts:
-            final_refined_prompts = extracted_refined_prompts[-1]
-        else:
-            raise ValueError("The LLM output is not in the expected format. Please rerun the code...")
+        if not extracted_refined_prompts:
+            raise LLMOutputFormatError("The LLM output does not contain properly formatted prompts")
+        final_refined_prompts = extracted_refined_prompts[-1]
 
         self.logger.info(
             f"Prompt to get critique:\n {meta_critique_prompt}"
