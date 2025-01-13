@@ -58,11 +58,18 @@ class AMCProcessor(DatasetSpecificProcessing):
                 success, output = repl(code)
                 
                 if success:
-                    # Convert output to numeric and standardize
-                    answer = str(int(float(output)))
-                    return answer
+                    # Extract the last numeric value from output
+                    import re
+                    numbers = re.findall(r'-?\d+\.?\d*', output)
+                    if numbers:
+                        # Take the last number printed
+                        answer = str(int(float(numbers[-1])))
+                        logger.info(f"Extracted answer {answer} from code output: {output}")
+                        return answer
+                    else:
+                        logger.warning(f"No numeric output found in code execution result: {output}")
                 else:
-                    logger.warning(f"Code execution failed:\n{output}")
+                    logger.warning(f"Code execution failed: {output}")
             
             # If no code block or execution failed, try boxed notation
             boxed_pattern = r'\\boxed\{([^}]+)\}'
