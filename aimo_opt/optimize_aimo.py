@@ -42,24 +42,44 @@ class AMCProcessor(DatasetSpecificProcessing):
         if not answer:
             return self.INVALID_ANS
 
-        # Extract numeric answer from the response
         try:
-            # Look for answer in \boxed{} notation
+            # First try to find Python code blocks
             import re
+            code_pattern = r'```python\s*(.*?)\s*```'
+            code_matches = re.findall(code_pattern, answer, re.DOTALL)
+            
+            if code_matches:
+                # Take the last code block if multiple exist
+                code = code_matches[-1].strip()
+                
+                # Execute the code using PythonREPL
+                from promptwizard.glue.common.utils.python_repl import PythonREPL
+                repl = PythonREPL(timeout=10)
+                success, output = repl(code)
+                
+                if success:
+                    # Convert output to numeric and standardize
+                    answer = str(int(float(output)))
+                    return answer
+                else:
+                    logger.warning(f"Code execution failed:\n{output}")
+            
+            # If no code block or execution failed, try boxed notation
             boxed_pattern = r'\\boxed\{([^}]+)\}'
-            matches = re.findall(boxed_pattern, answer)
+            boxed_matches = re.findall(boxed_pattern, answer)
 
-            if matches:
+            if boxed_matches:
                 # Take the last boxed answer if multiple exist
-                answer = matches[-1].strip()
+                answer = boxed_matches[-1].strip()
                 # Convert to numeric and back to string to standardize
                 answer = str(int(float(answer)))
                 return answer
 
-            logger.warning(f"Could not find boxed answer in response:\n{answer}")
+            logger.warning(f"Could not find valid answer in response:\n{answer}")
+            return self.INVALID_ANS
 
-            return self.INVALID_ANS  # @todo:0: handle python code in response. maybe judge in advance if the problem is best solved via python vs pure math. maybe different python apporaches: numeric, symbolic (sympy)
-        except:
+        except Exception as e:
+            logger.error(f"Error extracting answer: {str(e)}")
             return self.INVALID_ANS
 
 
