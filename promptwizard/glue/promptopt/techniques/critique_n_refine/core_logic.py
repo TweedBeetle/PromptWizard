@@ -169,11 +169,12 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
         )
 
         refined_prompts = self.chat_completion(critique_refine_prompt, self.prompt_pool.expert_profile)
+        refined_prompts = refined_prompts.replace("</END>", "<END>")
 
         extracted_refined_prompts = re.findall(DatasetSpecificProcessing.TEXT_DELIMITER_PATTERN, refined_prompts)
 
         if extracted_refined_prompts:
-            final_refined_prompts = extracted_refined_prompts[0]
+            final_refined_prompts = extracted_refined_prompts[-1]
         else:
             pass
             raise ValueError("The LLM output is not in the expected format. Please rerun the code...")
