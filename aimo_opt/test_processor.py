@@ -8,12 +8,12 @@ def test_extract_final_answer_basic_code():
     processor = AMCProcessor()
 
     response = '''
-    Here's the solution:
-    ```python
-    x = 5 + 3
-    print(x)
-    ```
-    '''
+Here's the solution:
+```python
+x = 5 + 3
+print(x)
+```
+'''
     assert processor.extract_final_answer(response) == "8"
 
 
@@ -24,12 +24,12 @@ def test_extract_final_answer_multiple_prints():
     processor = AMCProcessor()
 
     response = '''
-    ```python
-    print("intermediate")
-    print(42)
-    print("final:", 79)
-    ```
-    '''
+```python
+print("intermediate")
+print(42)
+print("final:", 79)
+```
+'''
     assert processor.extract_final_answer(response) == "79"
 
 
@@ -40,12 +40,12 @@ def test_extract_final_answer_computation():
     processor = AMCProcessor()
 
     response = '''
-    ```python
-    import math
-    result = math.factorial(4)
-    print(result)
-    ```
-    '''
+```python
+import math
+result = math.factorial(4)
+print(result)
+```
+'''
     assert processor.extract_final_answer(response) == "24"
 
 
