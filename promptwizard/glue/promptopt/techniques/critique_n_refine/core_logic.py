@@ -73,7 +73,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
         self.iolog.reset_eval_glue(base_path)
 
     @iolog.log_io_params
-    def chat_completion(self, user_prompt: str, system_prompt: str = None):
+    def chat_completion(self, user_prompt: str, system_prompt: str = None, temperature: float = 0.0):
         """
         Make a chat completion request to the OpenAI API.
 
@@ -88,7 +88,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ]
-        response = LLMMgr.chat_completion(messages)
+        response = LLMMgr.chat_completion(messages, temperature=temperature)
         if not response:
             pass
         return response
@@ -177,17 +177,10 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
         # Try to extract with fixed delimiters
         extracted_refined_prompts = re.findall(DatasetSpecificProcessing.TEXT_DELIMITER_PATTERN, refined_prompts)
 
-        if not extracted_refined_prompts:
-            # Try to extract content between <START> and END> as fallback
-            content = re.findall(r'<START>(.*?)(?:END>|</END>)', refined_prompts, re.DOTALL)
-            if content:
-                final_refined_prompts = content[-1].strip()
-                return final_refined_prompts
-
-            logger.error(f"Could not parse LLM output: {refined_prompts}")
+        if extracted_refined_prompts:
+            final_refined_prompts = extracted_refined_prompts[-1]
+        else:
             raise ValueError("The LLM output is not in the expected format. Please rerun the code...")
-
-        final_refined_prompts = extracted_refined_prompts[-1]
 
         self.logger.info(
             f"Prompt to get critique:\n {meta_critique_prompt}"
