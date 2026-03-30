@@ -329,7 +329,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
         return wrong_examples
 
     @iolog.log_io_params
-    def select_top_prompts(self, prompt_score_list: List, top_n: int) -> List:
+    def select_top_prompts(self, prompt_score_list: List, top_n: int, resolve_tie_criteria: str) -> List:
         """
         Sort prompts in prompt_score_list, based on its performance. And return max, top `top_n` prompts.
 
@@ -338,11 +338,19 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
         :param top_n: Max number of prompts from the top of the list, that we need to return
         :return: List of top `top_n` prompts.
         """
-        sorted_prompts = sorted(
-            prompt_score_list, key=lambda x: [x[self.GetPromptScoreIndex.SCORE],
-                                              len(x[self.GetPromptScoreIndex.PROMPT_STR])],
-            reverse=True
-        )
+        if resolve_tie_criteria == 'max':
+            sorted_prompts = sorted(
+                prompt_score_list, key=lambda x: [x[self.GetPromptScoreIndex.SCORE],
+                                                  len(x[self.GetPromptScoreIndex.PROMPT_STR])],
+                reverse=True
+            )
+        else:
+            sorted_prompts = sorted(
+                prompt_score_list, key=lambda x: [x[self.GetPromptScoreIndex.SCORE],
+                                                  -1 * len(x[self.GetPromptScoreIndex.PROMPT_STR])],
+                reverse=True
+            )
+
         sorted_top_n_prompts = sorted_prompts[:top_n]
         self.logger.debug(f"Sorted top n prompts:  {sorted_top_n_prompts}")
         return sorted_top_n_prompts
@@ -536,7 +544,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
 
     def get_best_prompt(
             self, params: PromptOptimizationParams, use_examples=False, run_without_train_examples=False,
-            generate_synthetic_examples=False
+            generate_synthetic_examples=False, resolve_tie_criteria="max"
     ) -> (str, Any):
         """
         Perform `params.max_iterations` iterations for optimizing your prompt. And return the best prompt found so far.
@@ -592,14 +600,14 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
                         prompt_index += 1
                     return "", ""
                 prompt_score_list = self.get_prompt_score(candidate_prompts, params)
-                prompt_score_list = self.select_top_prompts(prompt_score_list, params.top_n)
+                prompt_score_list = self.select_top_prompts(prompt_score_list, params.top_n,resolve_tie_criteria)
 
                 if params.refine_instruction:
                     refined_prompts = self.refine_prompts(prompt_score_list, params)
                     refined_prompt_score_list = self.get_prompt_score(refined_prompts, params)
                     prompt_score_list = self.select_top_prompts(
                         refined_prompt_score_list + prompt_score_list,
-                        params.top_n
+                        params.top_n, resolve_tie_criteria
                     )
 
                 current_base_instruction = prompt_score_list[0][self.GetPromptScoreIndex.PROMPT_STR]
@@ -627,7 +635,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
                     break
 
             if len(examples) < params.few_shot_count:
-                examples = random.sample(self.dataset, params.few_shot_count - len(examples))
+                examples += random.sample(self.dataset, params.few_shot_count - len(examples))
 
             # Refine task description and examples iteratively
             print("\nRefining Task description and Examples iteratively....")

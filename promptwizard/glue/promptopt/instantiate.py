@@ -121,7 +121,8 @@ class GluePromptOpt:
             )
 
     def get_best_prompt(
-            self, use_examples=False, run_without_train_examples=False, generate_synthetic_examples=False
+            self, use_examples=False, run_without_train_examples=False, generate_synthetic_examples=False,
+            resolve_tie_criteria="max"
             ) -> (List[str], Any):
         """
         Call get_best_prompt() method of class PromptOptimizer & return its value.
@@ -134,7 +135,7 @@ class GluePromptOpt:
         start_time = time.time()
         self.BEST_PROMPTS, self.EXPERT_PROFILE = self.prompt_opt.get_best_prompt(
             self.prompt_opt_param, use_examples=use_examples, run_without_train_examples=run_without_train_examples,
-            generate_synthetic_examples=generate_synthetic_examples
+            generate_synthetic_examples=generate_synthetic_examples, resolve_tie_criteria=resolve_tie_criteria
             )
         self.BEST_PROMPT = self.BEST_PROMPTS[0] if self.BEST_PROMPTS else None
 
@@ -193,7 +194,7 @@ class GluePromptOpt:
             total_correct += is_correct
             total_count += 1
             result = {
-                "accuracy": f"{total_correct}/{total_count} : {total_correct / total_count}%",
+                "accuracy": f"{total_correct}/{total_count} : {total_correct / total_count * 100.0}%",
                 "predicted": answer[self.EvalLiterals.PREDICTED_ANS],
                 "actual": examples[i][DatasetSpecificProcessing.FINAL_ANSWER_LITERAL]
             }
