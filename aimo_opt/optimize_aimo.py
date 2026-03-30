@@ -25,77 +25,6 @@ class AMCProcessor(DatasetSpecificProcessing):
         super().__init__()
         self.INVALID_ANS = "[invalid]"
 
-    def test_extract_final_answer_with_code():
-        """Test code block execution and answer extraction"""
-        processor = AMCProcessor()
-        
-        # Test with valid Python code block
-        response = '''
-        Here's the solution:
-        ```python
-        x = 5 + 3
-        print(x)
-        ```
-        '''
-        assert processor.extract_final_answer(response) == "8"
-        
-        # Test with multiple print statements
-        response = '''
-        ```python
-        print("intermediate")
-        print(42)
-        print("final:", 79)
-        ```
-        '''
-        assert processor.extract_final_answer(response) == "79"
-        
-        # Test with computation
-        response = '''
-        ```python
-        import math
-        result = math.factorial(4)
-        print(result)
-        ```
-        '''
-        assert processor.extract_final_answer(response) == "24"
-        
-        # Test with invalid code
-        response = '''
-        ```python
-        x = 1/0  # Division by zero error
-        ```
-        '''
-        assert processor.extract_final_answer(response) == processor.INVALID_ANS
-        
-        # Test with non-numeric output
-        response = '''
-        ```python
-        print("hello")
-        ```
-        '''
-        assert processor.extract_final_answer(response) == processor.INVALID_ANS
-        
-        # Test with boxed answer
-        response = r'\boxed{42}'
-        assert processor.extract_final_answer(response) == "42"
-        
-        # Test with both code and boxed answer - should use code output
-        response = '''
-        ```python
-        print(79)
-        ```
-        Final answer: \boxed{42}
-        '''
-        assert processor.extract_final_answer(response) == "79"
-        
-        # Test with no valid answer format
-        response = "The answer is 42"
-        assert processor.extract_final_answer(response) == processor.INVALID_ANS
-        
-        # Test with empty input
-        assert processor.extract_final_answer("") == processor.INVALID_ANS
-        assert processor.extract_final_answer(None) == processor.INVALID_ANS
-
     def dataset_to_jsonl(self, dataset_jsonl: str, **kwargs: Any) -> None:
         examples_set = []
 
@@ -118,16 +47,16 @@ class AMCProcessor(DatasetSpecificProcessing):
             import re
             code_pattern = r'```python\s*(.*?)\s*```'
             code_matches = re.findall(code_pattern, answer, re.DOTALL)
-            
+
             if code_matches:
                 # Take the last code block if multiple exist
                 code = code_matches[-1].strip()
-                
+
                 # Execute the code using PythonREPL
                 from promptwizard.glue.common.utils.python_repl import PythonREPL
                 repl = PythonREPL(timeout=10)
                 success, output = repl(code)
-                
+
                 if success:
                     # Extract the last numeric value from output
                     import re
@@ -141,7 +70,7 @@ class AMCProcessor(DatasetSpecificProcessing):
                         logger.warning(f"No numeric output found in code execution result: {output}")
                 else:
                     logger.warning(f"Code execution failed: {output}")
-            
+
             # If no code block or execution failed, try boxed notation
             boxed_pattern = r'\\boxed\{([^}]+)\}'
             boxed_matches = re.findall(boxed_pattern, answer)
@@ -184,10 +113,11 @@ def main():
 
     amc_processor.dataset_to_jsonl("opt_data/test.jsonl", dataset=test_data)
 
-    # Set up pathsÔ
-    # train_file_name = os.path.join("opt_data", "train.jsonl")
-    logger.critical("TEMP_TWEAK: training on test")  # @TEMP_TWEAK
-    train_file_name = os.path.join("opt_data", "test.jsonl")
+    # Set up paths
+    train_file_name = os.path.join("opt_data", "train.jsonl")
+
+    # logger.critical("TEMP_TWEAK: training on test")  # @TEMP_TWEAK
+    # train_file_name = os.path.join("opt_data", "test.jsonl")
 
     test_file_name = os.path.join("opt_data", "test.jsonl")
     path_to_config = "configs"

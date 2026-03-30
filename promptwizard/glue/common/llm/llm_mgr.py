@@ -12,50 +12,93 @@ from ..utils.runtime_tasks import install_lib_if_missing
 from ..utils.logging import get_glue_logger
 from ..utils.runtime_tasks import str_to_class
 import os
+import json
+
 logger = get_glue_logger(__name__)
 
-def call_api(messages):
+
+def call_api(messages, temperature: float = 0.0):
 
     from openai import OpenAI
     from azure.identity import get_bearer_token_provider, AzureCliCredential
     from openai import AzureOpenAI
 
+    meta_indicators = [
+        "You are given a task description and a prompt instruction and different styles known as meta prompts:",
+        "I'm trying to write a zero-shot instruction that will help the most capable and suitable agent to solve the task.",
+        "I'm trying to write a prompt for zero-shot instruction task that will help the most capable and suitable agent to solve the task.",
+        "For the given instruction, list out 3-5 keywords in comma separated format as ",
+        "For each instruction, write a high-quality description about the most capable and suitable agent to answer the instruction. In second person perspective.",
+        "You are an expert example selector who can help in selection of right in-context examples to help the most suitable agent solve this problem.",
+        "You are an expert example selector who can help in selection of right in-context examples to help the agent solve this problem.",
+    ]
+
+    meta = False
+
+    # check if any meta indicator are in any of the messages
+    for message in messages:
+        for indicator in meta_indicators:
+            if indicator in message["content"]:
+                # logger.info(f"Found meta indicator: {indicator}")
+                meta = True
+
+    max_tokens = 32768
+
     if os.environ['USE_OPENAI_API_KEY'] == "True":
-        client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+        client = OpenAI(
+            api_key=os.environ["OPENAI_API_KEY"],
+            base_url=os.environ.get("OPENAI_API_BASE_URL", None)
+        )
+
+        if not meta:
+            if "You are given a prompt instruction and the following" not in messages[1]['content']:
+                pass
 
         response = client.chat.completions.create(
-        model=os.environ["OPENAI_MODEL_NAME"],
-        messages=messages,
-        temperature=0.0,
+            model=os.environ["META_MODEL_NAME"] if meta else os.environ["OPENAI_MODEL_NAME"],
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
         )
     else:
         token_provider = get_bearer_token_provider(
-                AzureCliCredential(), "https://cognitiveservices.azure.com/.default"
-            )
+            AzureCliCredential(), "https://cognitiveservices.azure.com/.default"
+        )
         client = AzureOpenAI(
             api_version=os.environ["OPENAI_API_VERSION"],
             azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
             azure_ad_token_provider=token_provider
-            )
+        )
         response = client.chat.completions.create(
             model=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"],
             messages=messages,
-            temperature=0.0,
+            temperature=temperature,
+            max_tokens=max_tokens,
         )
 
-    prediction = response.choices[0].message.content
+    choice = response.choices[0]
+    assert choice.finish_reason == "stop"
+
+    prediction = choice.message.content
+
+    if 'Sorry, I am not able to' in prediction:
+        pass
+
+    if prediction is None:
+        raise Exception("LLM response is None")
+
     return prediction
 
 
 class LLMMgr:
     @staticmethod
-    def chat_completion(messages: Dict):
+    def chat_completion(messages: Dict, temperature: float = 0.0):
         llm_handle = os.environ.get("MODEL_TYPE", "AzureOpenAI")
         try:
-            if(llm_handle == "AzureOpenAI"): 
+            if (llm_handle == "AzureOpenAI"):
                 # Code to for calling LLMs
-                return call_api(messages)
-            elif(llm_handle == "LLamaAML"):
+                return call_api(messages, temperature=temperature)
+            elif (llm_handle == "LLamaAML"):
                 # Code to for calling SLMs
                 return 0
         except Exception as e:
@@ -63,7 +106,6 @@ class LLMMgr:
             return "Sorry, I am not able to understand your query. Please try again."
             # raise GlueLLMException(f"Exception when calling {llm_handle.__class__.__name__} "
             #                        f"LLM in chat mode, with message {messages} ", e)
-        
 
     @staticmethod
     def get_all_model_ids_of_type(llm_config: LLMConfig, llm_output_type: str):
@@ -105,17 +147,19 @@ class LLMMgr:
             az_token_provider = None
             # if az_llm_config.use_azure_ad:
             from azure.identity import get_bearer_token_provider, AzureCliCredential
-            az_token_provider = get_bearer_token_provider(AzureCliCredential(),
-                                                        "https://cognitiveservices.azure.com/.default")
+            az_token_provider = get_bearer_token_provider(
+                AzureCliCredential(),
+                "https://cognitiveservices.azure.com/.default"
+            )
 
             for azure_oai_model in az_llm_config.azure_oai_models:
                 callback_mgr = None
                 if azure_oai_model.track_tokens:
-                    
+
                     # If we need to count number of tokens used in LLM calls
                     token_counter = TokenCountingHandler(
                         tokenizer=tiktoken.encoding_for_model(azure_oai_model.model_name_in_azure).encode
-                        )
+                    )
                     callback_mgr = CallbackManager([token_counter])
                     token_counter.reset_counts()
                     # ()
@@ -125,38 +169,40 @@ class LLMMgr:
                     llm_pool[azure_oai_model.unique_model_id] = \
                         AzureOpenAI(
                             # use_azure_ad=az_llm_config.use_azure_ad,
-                                    azure_ad_token_provider=az_token_provider,
-                                    # model=azure_oai_model.model_name_in_azure,
-                                    # deployment_name=azure_oai_model.deployment_name_in_azure,
-                                    api_key=az_llm_config.api_key,
-                                    azure_endpoint=az_llm_config.azure_endpoint,
-                                    api_version=az_llm_config.api_version,
-                                    # callback_manager=callback_mgr
-                                    )
+                            azure_ad_token_provider=az_token_provider,
+                            # model=azure_oai_model.model_name_in_azure,
+                            # deployment_name=azure_oai_model.deployment_name_in_azure,
+                            api_key=az_llm_config.api_key,
+                            azure_endpoint=az_llm_config.azure_endpoint,
+                            api_version=az_llm_config.api_version,
+                            # callback_manager=callback_mgr
+                        )
                     # ()
                 elif azure_oai_model.model_type == LLMOutputTypes.EMBEDDINGS:
-                    llm_pool[azure_oai_model.unique_model_id] =\
-                        AzureOpenAIEmbedding(use_azure_ad=az_llm_config.use_azure_ad,
-                                             azure_ad_token_provider=az_token_provider,
-                                             model=azure_oai_model.model_name_in_azure,
-                                             deployment_name=azure_oai_model.deployment_name_in_azure,
-                                             api_key=az_llm_config.api_key,
-                                             azure_endpoint=az_llm_config.azure_endpoint,
-                                             api_version=az_llm_config.api_version,
-                                             callback_manager=callback_mgr
-                                             )
+                    llm_pool[azure_oai_model.unique_model_id] = \
+                        AzureOpenAIEmbedding(
+                            use_azure_ad=az_llm_config.use_azure_ad,
+                            azure_ad_token_provider=az_token_provider,
+                            model=azure_oai_model.model_name_in_azure,
+                            deployment_name=azure_oai_model.deployment_name_in_azure,
+                            api_key=az_llm_config.api_key,
+                            azure_endpoint=az_llm_config.azure_endpoint,
+                            api_version=az_llm_config.api_version,
+                            callback_manager=callback_mgr
+                        )
                 elif azure_oai_model.model_type == LLMOutputTypes.MULTI_MODAL:
 
                     llm_pool[azure_oai_model.unique_model_id] = \
-                        AzureOpenAIMultiModal(use_azure_ad=az_llm_config.use_azure_ad,
-                                              azure_ad_token_provider=az_token_provider,
-                                              model=azure_oai_model.model_name_in_azure,
-                                              deployment_name=azure_oai_model.deployment_name_in_azure,
-                                              api_key=az_llm_config.api_key,
-                                              azure_endpoint=az_llm_config.azure_endpoint,
-                                              api_version=az_llm_config.api_version,
-                                              max_new_tokens=4096
-                                              )
+                        AzureOpenAIMultiModal(
+                            use_azure_ad=az_llm_config.use_azure_ad,
+                            azure_ad_token_provider=az_token_provider,
+                            model=azure_oai_model.model_name_in_azure,
+                            deployment_name=azure_oai_model.deployment_name_in_azure,
+                            api_key=az_llm_config.api_key,
+                            azure_endpoint=az_llm_config.azure_endpoint,
+                            api_version=az_llm_config.api_version,
+                            max_new_tokens=4096
+                        )
 
         if llm_config.custom_models:
             for custom_model in llm_config.custom_models:
@@ -168,12 +214,12 @@ class LLMMgr:
                     # If we need to count number of tokens used in LLM calls
                     token_counter = TokenCountingHandler(
                         tokenizer=custom_llm_class.get_tokenizer()
-                        )
+                    )
                     callback_mgr = CallbackManager([token_counter])
                     token_counter.reset_counts()
                 llm_pool[custom_model.unique_model_id] = custom_llm_class(callback_manager=callback_mgr)
                 # except Exception as e:
-                    # raise GlueLLMException(f"Custom model {custom_model.unique_model_id} not loaded.", e)
+                # raise GlueLLMException(f"Custom model {custom_model.unique_model_id} not loaded.", e)
         return llm_pool
 
     @staticmethod
@@ -191,5 +237,5 @@ class LLMMgr:
                 LLMLiterals.PROMPT_LLM_TOKEN_COUNT: token_counter.prompt_llm_token_count,
                 LLMLiterals.COMPLETION_LLM_TOKEN_COUNT: token_counter.completion_llm_token_count,
                 LLMLiterals.TOTAL_LLM_TOKEN_COUNT: token_counter.total_llm_token_count
-                }
+            }
         return None

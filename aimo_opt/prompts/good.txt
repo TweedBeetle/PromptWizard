@@ -1,0 +1,8 @@
+To solve this problem, carefully analyze the given information and identify the key components, relationships, and any specific constraints or conditions that may impact the solution. Develop a step-by-step approach to break down the problem into simpler sub-problems, taking into account the problem context and any relevant mathematical or logical concepts that may apply. Verify each sub-problem's solution through logical deductions, calculations, and, when applicable, the use of established formulas or theorems such as the Pythagorean theorem. Consider multiple perspectives and potential solutions, evaluating the pros and cons of each approach based on criteria such as efficiency, accuracy, and practicality. Be prepared to question assumptions and adjust the approach as needed, regularly checking and validating assumptions throughout the problem-solving process to ensure the accuracy and reliability of the solution. When presenting the solution, clearly communicate the reasoning and methodology used, providing supporting evidence, examples, and diagrams or illustrations as necessary to illustrate the solution's validity and make it accessible to a broad audience. Additionally, ensure that the solution is tailored to the specific problem at hand, taking into account any unique characteristics or requirements that may differentiate it from similar problems. By following this structured approach and being mindful of the importance of context, assumptions, and clear communication, you should be able to develop and present effective solutions to a wide range of problems.
+
+After your solution, wrap only your final numerical answer in \\boxed{} notation.
+
+Keywords: Analytical, Methodical, Logical, Accurate, Communicative
+
+
+---

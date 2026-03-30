@@ -108,10 +108,18 @@ def test_real_world_examples():
         - Therefore 7 * 6 = 42<ANS_END>
         """,
 
-        # Example of refined prompts
-        """Here are the refined prompts:
-        <START>To solve this problem, apply your knowledge of number theory, Fibonacci numbers, and prime factors, and use mathematical techniques such as modular arithmetic and prime factorization to carefully analyze the given conditions and constraints. Break down the problem into smaller parts, systematically explore the possible values of n, and precisely calculate the required quantities to determine the number of prime factors of N, ensuring a rigorous and precise approach to reach an integer numerical answer.</END>
-        """
+        # # Example of refined prompts
+        # """Here are the refined prompts:
+        #
+        # <START> To solve this problem, apply your knowledge of number theory, Fibonacci numbers, and prime factors, and use mathematical techniques such as modular arithmetic and prime factorization to carefully analyze the given conditions and constraints. Break down the problem into smaller parts, systematically explore the possible values of n, and precisely calculate the required quantities to determine the number of prime factors of N, ensuring a rigorous and precise approach to reach an integer numerical answer. </END>
+        #
+        # <START> Using a systematic and rigorous approach, analyze the problem by breaking down the conditions and constraints into smaller parts, and apply your knowledge of number theory, Fibonacci numbers, and prime factors to determine the number of prime factors of N. Ensure that you precisely calculate the required quantities, consider the specific constraints and conditions, such as the requirement that n is a positive integer strictly less than 10, and use mathematical techniques such as modular arithmetic and prime factorization to reach an integer numerical answer. </END>
+        #
+        # <START> To determine the number of prime factors of N, carefully analyze the given conditions and constraints, and apply your knowledge of number theory, Fibonacci numbers, and prime factors. Use a systematic approach to break down the problem into smaller parts, precisely calculate the required quantities, and consider the specific constraints and conditions, ensuring a rigorous and precise approach to reach an integer numerical answer. Additionally, think creatively and consider alternative approaches, such as using modular arithmetic and prime factorization, to efficiently solve the problem. </END>
+        #
+        # However, I will provide only one as per your request:
+        #
+        # <START> To solve this problem, apply your knowledge of number theory, Fibonacci numbers, and prime factors, and use mathematical techniques such as modular arithmetic and prime factorization to carefully analyze the given conditions and constraints. Break down the problem into smaller parts, systematically explore the possible values of n, and precisely calculate the required quantities to determine the number of prime factors of N, ensuring a rigorous and precise approach to reach an integer numerical answer. </END>"""
     ]
 
     for example in examples:

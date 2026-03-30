@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+aimo_opt/data/
+aimo_opt/opt_data/
+
 # User-specific files
 *.rsuser
 *.suo
@@ -396,3 +399,29 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Project-specific ignores
+.aider*
+aimo_opt/data/
+aimo_opt/opt_data/
+opt_data/
+aimo_opt/results/
+promptwizard.egg-info/
+
+# Python
+venv/
+.venv/
+*.pyc
+__pycache__/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# macOS
+.DS_Store
+
+# Notebooks
+demos/gsm8k/.ipynb_checkpoints/
+demos/gsm8k/data/

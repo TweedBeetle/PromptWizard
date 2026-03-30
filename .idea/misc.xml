@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Black">
+    <option name="sdkName" value="Python 3.12 virtualenv at ~/projects/PromptWizard/venv" />
+  </component>
+  <component name="GithubDefaultAccount">
+    <option name="defaultAccountId" value="f264120e-b0ac-46c0-8f56-33fd937fec3d" />
+  </component>
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 virtualenv at ~/projects/PromptWizard/venv" project-jdk-type="Python SDK" />
+  <component name="accountSettings">
+    <option name="activeRegion" value="us-east-1" />
+    <option name="recentlyUsedRegions">
+      <list>
+        <option value="us-east-1" />
+      </list>
+    </option>
+  </component>
+</project>

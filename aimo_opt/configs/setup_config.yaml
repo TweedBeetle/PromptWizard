@@ -1,0 +1,10 @@
+assistant_llm:
+#  prompt_opt: meta-llama/Llama-3.3-70B-Instruct-Turbo
+  prompt_opt: meta-llama/Llama-3.3-70B-Instruct
+#  prompt_opt: Qwen/QwQ-32B-Preview
+dir_info:
+  base_dir: logs
+  log_dir_name: glue_logs
+experiment_name: amc
+mode: offline
+description: "Optimizing prompts for mathematical problem solving"

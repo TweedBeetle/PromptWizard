@@ -58,7 +58,15 @@ aimo_sample_problems: List[MathProblem] = [
                           "integers a1, ..., an such that a1 + · · · + an = G(a1, . . . , an) + 1. Find the sum of all artificial "
                           "integers m in the range 2 ≤ m ≤ 40.",
         solution=810
-    )
+    ),
+    MathProblem(
+        problem_statement="We call a sequence a1, a2, . . . of non-negative integers delightful if there exists a positive integer N such that for all n > N, an = 0, and for all i ≥ 1, ai counts the number of multiples of i in a1, a2, . . . , aN. How many delightful sequences of non-negative integers are there?",
+        solution=3
+    ),
+    MathProblem(
+        problem_statement="Fred and George take part in a tennis tournament with 4046 other players. In each round, the players are paired into 2024 matches. How many ways are there to arrange the first round such that Fred and George do not have to play each other? (Two arrangements for the first round are different if there is a player with a different opponent in the two arrangements.)",
+        solution=250
+    ),
 ]
 
 

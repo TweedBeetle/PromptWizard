@@ -2,7 +2,7 @@ import random
 import re
 import os
 import asyncio
-from tenacity import retry, stop_after_attempt, wait_fixed
+from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 from os.path import join
 from tqdm import tqdm
 from typing import Any, Dict, List
@@ -21,6 +21,7 @@ from ...techniques.critique_n_refine.base_classes import CritiqueNRefinePromptPo
 class LLMOutputFormatError(Exception):
     """Raised when LLM output does not match expected format"""
     pass
+
 
 def extract_between(start, end, text):
     """
@@ -123,7 +124,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
                 num_variations=thinking_styles_count,
                 prompt_instruction=base_instruction
             )
-            generated_mutated_prompt = self.chat_completion(mutated_sample_prompt)
+            generated_mutated_prompt = self.chat_completion(mutated_sample_prompt, temperature=0.3)
             # Find all matches of the pattern in the text
             matches = re.findall(DatasetSpecificProcessing.TEXT_DELIMITER_PATTERN_MUTATION, generated_mutated_prompt)
             candidate_prompts.extend(matches)
@@ -137,11 +138,11 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
 
     @retry(
         stop=stop_after_attempt(3),
-        wait=wait_fixed(1),
-        retry_error_callback=lambda _: "",
-        retry=(retry_if_exception_type(LLMOutputFormatError))
+        # retry_error_callback=lambda _: "",
+        retry=(retry_if_exception_type(LLMOutputFormatError)),
+        reraise=True,
     )
-    @iolog.log_io_params  
+    @iolog.log_io_params
     def critique_and_refine(
             self, prompt: str, critique_example_set: List,
             further_enhance: bool = False
@@ -179,7 +180,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
             steps_per_sample=1
         )
 
-        refined_prompts = self.chat_completion(critique_refine_prompt, self.prompt_pool.expert_profile)
+        refined_prompts = self.chat_completion(critique_refine_prompt, self.prompt_pool.expert_profile, temperature=0.5)
         # Fix common delimiter issues
         refined_prompts = refined_prompts.replace("</END>", "<END>")
         # Use regex to replace END> not preceded by < with </END>
@@ -234,7 +235,8 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
 
                 print(f"critique_example_set: {bool(critique_example_set)}, correct_count: {correct_count}")
 
-            print(f"Loop completed for instruction {instruction[:20]}...")
+            print(f"Loop completed for instruction {instruction[:20]}... (Correct: {(correct_count/count)*100:.2f}%)")
+
             return [instruction, correct_count / count, dataset_subset]
 
     @iolog.log_io_params
@@ -307,7 +309,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
 
         # answer_matches = [self.chat_completion(FINAL_ANSWER_EXTRACTION_PROMPT.format(text=generated_text), "You are an AI assistant. Please follow the users requests.")]
         answer_matches = [generated_text]
-        # 
+
         answers_len, dataset_len = len(answer_matches), len(dataset_subset)
         if answers_len != dataset_len:
             self.logger.info(f"Answers extracted from LLM output={answers_len}, Questions asked to LLM {dataset_len}")
@@ -323,7 +325,7 @@ class CritiqueNRefine(PromptOptimizer, UniversalBaseClass):
             is_correct, _ = self.data_processor.access_answer(answer_matches[i], actual_answer)
             if not is_correct:
                 wrong_examples.append(dataset_subset[i])
-        # 
+
         return wrong_examples
 
     @iolog.log_io_params

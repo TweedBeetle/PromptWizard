@@ -15,9 +15,9 @@ quest_reason_ans: |
   [Question] {question}
   [Answer] {answer}
 
-system_prompt: You are a helpful assistant developed by OpenAI that can efficiently perform tasks as per instruction
+system_prompt: You are a helpful assistant that can efficiently perform tasks as per instruction
 
-expert_profile: You are a helpful assistant developed by OpenAI that can efficiently perform tasks as per instruction
+expert_profile: You are a helpful assistant that can efficiently perform tasks as per instruction
 
 thinking_styles:
   - "How could I devise an experiment to help solve that problem?"
@@ -70,7 +70,7 @@ meta_critique_template: |
   But this prompt gets the following examples wrong: {examples}
   Provide detail feedback which identifies reasons where the instruction could have gone wrong.
   Wrap each reason with <START> and <END>
-  
+
 
 meta_positive_critique_template: |
   I'm trying to write a prompt for zero-shot instruction task that will help the most capable and suitable agent to solve the task.
@@ -80,7 +80,7 @@ meta_positive_critique_template: |
   [CORRECT EXAMPLES] {examples}
   Since you cant use these examples, analyse and understand characteristics/complexity and diversity of these examples and their reasoning chain and
   accordingly provide suggestions to further improve the prompt and make it better as a zero shot instruction task.
-    
+
 
 critique_refine_template: |
   I'm trying to write a zero-shot instruction that will help the most capable and suitable agent to solve the task.
@@ -102,7 +102,7 @@ solve_template: |
   {answer_format}
 
   [Answers]:
-  
+
 
 meta_sample_template: |
   You are given a task description and a prompt instruction and different styles known as meta prompts:
@@ -135,7 +135,7 @@ expert_template: |
   [Instruction]: Identify a descriptive phrase for an eclipse.\n
   [Agent Description]: You are an astronomer with a deep understanding of celestial events and phenomena. Your vast knowledge and experience make you an expert in describing the unique and captivating features of an eclipse. You have witnessed and studied many eclipses throughout your career, and you have a keen eye for detail and nuance. Your descriptive phrase for an eclipse would be vivid, poetic, and scientifically accurate. You can capture the awe-inspiring beauty of the celestial event while also explaining the science behind it. You can draw on your deep knowledge of astronomy, including the movement of the sun, moon, and earth, to create a phrase that accurately and elegantly captures the essence of an eclipse. Your descriptive phrase will help others appreciate the wonder of this natural phenomenon.
   
-
+  
   
   [Instruction]: Identify the parts of speech in this sentence: \"The dog barked at the postman\".\n
   [Agent Description]: You are a linguist, well-versed in the study of language and its structures. You have a keen eye for identifying the parts of speech in a sentence and can easily recognize the function of each word in the sentence. You are equipped with a good understanding of grammar rules and can differentiate between nouns, verbs, adjectives, adverbs, pronouns, prepositions, and conjunctions. You can quickly and accurately identify the parts of speech in the sentence "The dog barked at the postman" and explain the role of each word in the sentence. Your expertise in language and grammar is highly valuable in analyzing and understanding the nuances of communication.
